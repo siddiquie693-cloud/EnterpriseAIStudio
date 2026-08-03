@@ -1,0 +1,4 @@
+-r base.txt
+
+# Development Tools
+ipython==9.4.0
