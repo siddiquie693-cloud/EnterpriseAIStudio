@@ -1,0 +1,35 @@
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | __pycache__
+  | migrations
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 88
+skip = [".venv", "__pycache__", "migrations"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+exclude = [
+    ".venv",
+    "__pycache__",
+    "migrations",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/config/settings/__init__.py" = ["F403"]
+"backend/config/settings/development.py" = ["F403"]
+"backend/config/settings/production.py" = ["F403"]
