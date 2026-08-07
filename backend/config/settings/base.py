@@ -41,8 +41,14 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Third-party Apps
+    "rest_framework",
+    "rest_framework_simplejwt",
+    "drf_spectacular",
+    "django_filters",
     # Local Apps
     "apps.users",
+    "apps.api",
 ]
 
 AUTH_USER_MODEL = "users.User"
@@ -131,3 +137,25 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_SCHEMA_CLASS": ("drf_spectacular.openapi.AutoSchema"),
+    "DEFAULT_FILTER_BACKENDS": (
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
+    ),
+    "DEFAULT_PAGINATION_CLASS": ("rest_framework.pagination.PageNumberPagination"),
+    "PAGE_SIZE": 10,
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "EnterpriseAIStudio API",
+    "DESCRIPTION": "Enterprise AI Platform REST API",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+}
