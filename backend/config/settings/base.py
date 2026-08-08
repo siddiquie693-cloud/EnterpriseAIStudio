@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "drf_spectacular",
     "django_filters",
+    "rest_framework_simplejwt.token_blacklist",
     # Local Apps
     "apps.users",
     "apps.api",
@@ -158,4 +159,5 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Enterprise AI Platform REST API",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
 }

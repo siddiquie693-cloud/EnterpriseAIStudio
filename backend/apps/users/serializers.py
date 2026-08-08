@@ -1,5 +1,9 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import (
+    TokenBlacklistSerializer,
+    TokenObtainPairSerializer,
+)
 
 User = get_user_model()
 
@@ -21,3 +25,34 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         from .services import create_user
 
         return create_user(validated_data)
+
+
+class UserLoginSerializer(TokenObtainPairSerializer):
+    username_field = "email"
+
+
+class UserLogoutSerializer(TokenBlacklistSerializer):
+    pass
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "phone_number",
+            "profile_picture",
+            "is_verified",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = (
+            "id",
+            "email",
+            "is_verified",
+            "created_at",
+            "updated_at",
+        )
