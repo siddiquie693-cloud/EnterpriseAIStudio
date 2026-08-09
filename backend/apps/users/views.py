@@ -7,6 +7,7 @@ from rest_framework.permissions import (
 )
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import (
     TokenBlacklistView,
     TokenObtainPairView,
@@ -14,6 +15,7 @@ from rest_framework_simplejwt.views import (
 )
 
 from .serializers import (
+    ChangePasswordSerializer,
     UserLoginSerializer,
     UserLogoutSerializer,
     UserProfileSerializer,
@@ -80,6 +82,65 @@ class UserProfileAPIView(APIView):
             serializer.save()
             return Response(serializer.data)
 
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class ChangePasswordAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=ChangePasswordSerializer,
+        responses={
+            200: {
+                "type": "object",
+                "properties": {
+                    "message": {"type": "string"},
+                },
+            },
+        },
+    )
+    def post(self, request):
+        serializer = ChangePasswordSerializer(
+            data=request.data,
+            context={"request": request},
+        )
+
+        if serializer.is_valid():
+            user = request.user
+
+            user.set_password(serializer.validated_data["new_password"])
+            user.save(update_fields=["password"])
+
+            refresh_token = request.data.get("refresh_token")
+
+            if refresh_token:
+                try:
+                    token = RefreshToken(refresh_token)
+
+                    if token["user_id"] != str(user.id):
+                        return Response(
+                            {
+                                "refresh_token": (
+                                    "Refresh token does not belong to this user."
+                                )
+                            },
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                    token.blacklist()
+
+                except Exception:
+                    return Response(
+                        {"refresh_token": "Invalid refresh token."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+            return Response(
+                {"message": "Password changed successfully."},
+                status=status.HTTP_200_OK,
+            )
         return Response(
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST,
