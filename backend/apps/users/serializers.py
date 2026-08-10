@@ -26,8 +26,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
         user, uid, token = create_user(validated_data)
 
-        user.verification_uid = uid
-        user.verification_token = token
+        user._verification_uid = uid
+        user._verification_token = token
 
         return user
 

@@ -22,7 +22,6 @@ from .serializers import (
     UserProfileSerializer,
     UserRegistrationSerializer,
 )
-from .services import generate_email_verification_token
 
 
 class UserRegistrationAPIView(APIView):
@@ -38,7 +37,8 @@ class UserRegistrationAPIView(APIView):
         if serializer.is_valid():
             user = serializer.save()
 
-            uid, token = generate_email_verification_token(user)
+            uid = user._verification_uid
+            token = user._verification_token
 
             return Response(
                 {
