@@ -16,11 +16,13 @@ from rest_framework_simplejwt.views import (
 
 from .serializers import (
     ChangePasswordSerializer,
+    EmailVerificationSerializer,
     UserLoginSerializer,
     UserLogoutSerializer,
     UserProfileSerializer,
     UserRegistrationSerializer,
 )
+from .services import generate_email_verification_token
 
 
 class UserRegistrationAPIView(APIView):
@@ -36,15 +38,49 @@ class UserRegistrationAPIView(APIView):
         if serializer.is_valid():
             user = serializer.save()
 
+            uid, token = generate_email_verification_token(user)
+
             return Response(
                 {
                     "message": "User registered successfully.",
                     "email": user.email,
                     "username": user.username,
+                    "verification": {
+                        "uid": uid,
+                        "token": token,
+                    },
                 },
                 status=status.HTTP_201_CREATED,
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class EmailVerificationAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        request=EmailVerificationSerializer,
+        responses={
+            200: {"description": "Email verified successfully."},
+            400: {"description": "Invalid or expired verification link."},
+        },
+    )
+    def post(self, request):
+        serializer = EmailVerificationSerializer(data=request.data)
+
+        if serializer.is_valid():
+            user = serializer.validated_data["user"]
+            user.is_verified = True
+            user.save(update_fields=["is_verified"])
+
+            return Response(
+                {"message": "Email verified successfully."},
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
 
 class UserLoginAPIView(TokenObtainPairView):

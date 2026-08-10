@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     ChangePasswordAPIView,
+    EmailVerificationAPIView,
     UserLoginAPIView,
     UserLogoutAPIView,
     UserProfileAPIView,
@@ -39,5 +40,10 @@ urlpatterns = [
         "change-password/",
         ChangePasswordAPIView.as_view(),
         name="change-password",
+    ),
+    path(
+        "verified-email/",
+        EmailVerificationAPIView.as_view(),
+        name="verify-email",
     ),
 ]

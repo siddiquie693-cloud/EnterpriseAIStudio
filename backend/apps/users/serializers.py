@@ -24,7 +24,43 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         from .services import create_user
 
-        return create_user(validated_data)
+        user, uid, token = create_user(validated_data)
+
+        user.verification_uid = uid
+        user.verification_token = token
+
+        return user
+
+
+class EmailVerificationSerializer(serializers.Serializer):
+    uid = serializers.CharField(
+        required=True,
+    )
+    token = serializers.CharField(
+        required=True,
+    )
+
+    def validate(self, attrs):
+        from django.contrib.auth.tokens import default_token_generator
+        from django.utils.encoding import force_str
+        from django.utils.http import urlsafe_base64_decode
+
+        try:
+            user_id = force_str(urlsafe_base64_decode(attrs["uid"]))
+            user = User.objects.get(pk=user_id)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            raise serializers.ValidationError({"uid": "Invalid verification link."})
+
+        if user.is_verified:
+            raise serializers.ValidationError({"token": "Email is already verified."})
+
+        if not default_token_generator.check_token(user, attrs["token"]):
+            raise serializers.ValidationError(
+                {"token": "Invalid or expired verification link."}
+            )
+
+        attrs["user"] = user
+        return attrs
 
 
 class UserLoginSerializer(TokenObtainPairSerializer):
