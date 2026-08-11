@@ -106,7 +106,7 @@ class PasswordResetRequestAPIView(APIView):
         serializer = PasswordResetRequestSerializer(data=request.data)
 
         if serializer.is_valid():
-            user = serializer.user
+            user = serializer.validated_data["user"]
 
             uid, token = generate_password_reset_token(user)
 

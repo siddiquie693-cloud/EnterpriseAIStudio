@@ -69,19 +69,19 @@ class EmailVerificationSerializer(serializers.Serializer):
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
 
-    def validate_email(self, value):
+    def validate(self, attrs):
         try:
-            user = User.objects.get(email=value)
+            user = User.objects.get(email=attrs["email"])
         except User.DoesNotExist:
             raise serializers.ValidationError(
-                "No account found with this email address."
+                {"email": "No account found with this email address."}
             )
 
         if not user.is_active:
-            raise serializers.ValidationError("This account is inactive.")
+            raise serializers.ValidationError({"email": "This account is inactive."})
 
-        self.user = user
-        return value
+        attrs["user"] = user
+        return attrs
 
 
 class PasswordResetConfirmSerializer(serializers.Serializer):
