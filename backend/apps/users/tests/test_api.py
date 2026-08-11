@@ -3,7 +3,10 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.users.models import User
-from apps.users.services import generate_email_verification_token
+from apps.users.services import (
+    generate_email_verification_token,
+    generate_password_reset_token,
+)
 
 
 class UserAuthenticationAPITests(APITestCase):
@@ -19,6 +22,8 @@ class UserAuthenticationAPITests(APITestCase):
         self.change_password_url = reverse("change-password")
         self.refresh_url = reverse("token-refresh")
         self.verify_email_url = reverse("verify-email")
+        self.password_reset_request_url = reverse("password-reset-request")
+        self.password_reset_confirm_url = reverse("password-reset-confirm")
 
     def get_tokens(self):
         response = self.client.post(
@@ -261,6 +266,80 @@ class UserAuthenticationAPITests(APITestCase):
             {
                 "uid": uid,
                 "token": token,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_password_reset_request_success(self):
+        response = self.client.post(
+            self.password_reset_request_url,
+            {
+                "email": self.user.email,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+            response.data,
+        )
+
+        self.assertIn("uid", response.data)
+        self.assertIn("token", response.data)
+
+    def test_password_reset_request_invalid_email(self):
+        response = self.client.post(
+            self.password_reset_request_url,
+            {
+                "email": "doesnotexist@example.com",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_password_reset_confirm_success(self):
+        uid, token = generate_password_reset_token(self.user)
+
+        response = self.client.post(
+            self.password_reset_confirm_url,
+            {
+                "uid": uid,
+                "token": token,
+                "new_password": "ResetPassword@123",
+                "confirm_password": "ResetPassword@123",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.user.refresh_from_db()
+
+        self.assertTrue(self.user.check_password("ResetPassword@123"))
+
+    def test_password_reset_confirm_invalid_token(self):
+        uid, _ = generate_password_reset_token(self.user)
+
+        response = self.client.post(
+            self.password_reset_confirm_url,
+            {
+                "uid": uid,
+                "token": "invalid-token",
+                "new_password": "ResetPassword@123",
+                "confirm_password": "ResetPassword@123",
             },
             format="json",
         )

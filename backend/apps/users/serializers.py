@@ -1,4 +1,7 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import (
     TokenBlacklistSerializer,
@@ -59,6 +62,60 @@ class EmailVerificationSerializer(serializers.Serializer):
                 {"token": "Invalid or expired verification link."}
             )
 
+        attrs["user"] = user
+        return attrs
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+    def validate_email(self, value):
+        try:
+            user = User.objects.get(email=value)
+        except User.DoesNotExist:
+            raise serializers.ValidationError(
+                "No account found with this email address."
+            )
+
+        if not user.is_active:
+            raise serializers.ValidationError("This account is inactive.")
+
+        self.user = user
+        return value
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    uid = serializers.CharField(required=True)
+    token = serializers.CharField(required=True)
+    new_password = serializers.CharField(
+        required=True,
+        write_only=True,
+        min_length=8,
+    )
+    confirm_password = serializers.CharField(
+        required=True,
+        write_only=True,
+        min_length=8,
+    )
+
+    def validate(self, attrs):
+        uid = attrs["uid"]
+        token = attrs["token"]
+
+        try:
+            uid_decoded = force_str(urlsafe_base64_decode(uid))
+            user = User.objects.get(pk=uid_decoded)
+        except (ValueError, TypeError, OverflowError, User.DoesNotExist):
+            raise serializers.ValidationError({"uid": "Invalid user identifier."})
+        if not default_token_generator.check_token(user, token):
+            raise serializers.ValidationError(
+                {"token": "Invalid or expired password reset token."}
+            )
+
+        if attrs["new_password"] != attrs["confirm_password"]:
+            raise serializers.ValidationError(
+                {"confirm_password": "Password do not match."}
+            )
         attrs["user"] = user
         return attrs
 

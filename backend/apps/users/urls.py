@@ -3,6 +3,8 @@ from django.urls import path
 from .views import (
     ChangePasswordAPIView,
     EmailVerificationAPIView,
+    PasswordResetConfirmAPIView,
+    PasswordResetRequestAPIView,
     UserLoginAPIView,
     UserLogoutAPIView,
     UserProfileAPIView,
@@ -45,5 +47,15 @@ urlpatterns = [
         "verified-email/",
         EmailVerificationAPIView.as_view(),
         name="verify-email",
+    ),
+    path(
+        "password-reset/request/",
+        PasswordResetRequestAPIView.as_view(),
+        name="password-reset-request",
+    ),
+    path(
+        "password-reset/confirm/",
+        PasswordResetConfirmAPIView.as_view(),
+        name="password-reset-confirm",
     ),
 ]

@@ -17,11 +17,14 @@ from rest_framework_simplejwt.views import (
 from .serializers import (
     ChangePasswordSerializer,
     EmailVerificationSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
     UserLoginSerializer,
     UserLogoutSerializer,
     UserProfileSerializer,
     UserRegistrationSerializer,
 )
+from .services import generate_password_reset_token
 
 
 class UserRegistrationAPIView(APIView):
@@ -75,6 +78,77 @@ class EmailVerificationAPIView(APIView):
 
             return Response(
                 {"message": "Email verified successfully."},
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class PasswordResetRequestAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        request=PasswordResetRequestSerializer,
+        responses={
+            200: {
+                "type": "object",
+                "properties": {
+                    "message": {"type": "string"},
+                    "uid": {"type": "string"},
+                    "token": {"type": "string"},
+                },
+            },
+        },
+    )
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+
+        if serializer.is_valid():
+            user = serializer.user
+
+            uid, token = generate_password_reset_token(user)
+
+            return Response(
+                {
+                    "message": "Password reset token generated successfully.",
+                    "uid": uid,
+                    "token": token,
+                },
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class PasswordResetConfirmAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        request=PasswordResetConfirmSerializer,
+        responses={
+            200: {
+                "type": "object",
+                "properties": {
+                    "message": {"type": "string"},
+                },
+            },
+        },
+    )
+    def post(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+
+        if serializer.is_valid():
+            user = serializer.validated_data["user"]
+
+            user.set_password(serializer.validated_data["new_password"])
+            user.save(update_fields=["password"])
+
+            return Response(
+                {"message": "Password reset successfully."},
                 status=status.HTTP_200_OK,
             )
         return Response(
